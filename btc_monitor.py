@@ -28,9 +28,9 @@ def send_discord(msg):
     if DISCORD_WEBHOOK:
         data = {"content": msg}
         try:
-            requests.post(DISCORD_WEBHOOK, json=data)
+            requests.post(DISCORD_WEBHOOK, json=data, timeout=5)
         except Exception as e:
-            print(f"Discord 發送失敗: {e}")
+            logging.error(f"Discord 發送失敗: {e}")
 
 def get_klines():
     """抓取 K 線並計算 MA20 (用 safe_api_call 防呆) """
@@ -71,7 +71,7 @@ try:
             logging.info(f"目前 {asset['asset']} 虛擬餘額: {asset['free']}")
     logging.info("----------------------------")
 except Exception as e:
-    logging.critical(f"API 金鑰連線失敗，請檢查 .env 設定: {e}")
+    logging.critical(f"無法連線至幣安測試網,請檢查API金鑰或網路連線: {e}")
     exit()
 
 logging.info("🚀 V2.0 自動交易機器人 (防呆風控升級版) 啟動中...")
@@ -127,7 +127,7 @@ while True:
 
         # 賣出邏輯：價格跌破 MA20 且 目前有持倉
         elif price < ma20 and position:
-            print("🔴 觸發賣出訊號，正在向測試網下單...")
+            logging.info("🔴 觸發賣出訊號，正在向測試網下單...")
             if execute_order(Client.SIDE_SELL):
                 pnl = (price - entry_price) * QUANTITY
                 # 策略賣出成功：同步寫入 Supabase 資料庫
@@ -138,6 +138,6 @@ while True:
                 send_discord(f"🔻 **V2.0 自動賣出** | 價格: ${price:.2f} | 數量: {QUANTITY} BTC")
 
     except Exception as e:
-        print(f"執行時發生錯誤: {e}")
+        logging.error(f"執行時發生錯誤: {e}")
 
     time.sleep(10)
